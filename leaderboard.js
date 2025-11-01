@@ -73,32 +73,40 @@
       }
       return r.text();
     })
-    .then(txt => {
-      const rows = parseCSV(txt);
-      if (!rows.length) return;
-      const [hdr, ...body] = rows;
-      const idxName = hdr.findIndex(h => /name/i.test(h));
-      const idxSurname = hdr.findIndex(h => /surname/i.test(h));
-      const idxMembers = hdr.findIndex(h => /members/i.test(h));
+ .then(txt => {
+  const rows = parseCSV(txt);
+  if (!rows.length) return;
 
-      const records = body
-        .map(r => ({
-          name: r[idxName] || '',
-          surname: r[idxSurname] || '',
-          members: Number((r[idxMembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
-        }))
-        .filter(r => r.name || r.surname)
-        .sort((a, b) => b.members - a.members);
+  let [hdr, ...body] = rows;
+  hdr = hdr.map(h => (h || '').toString().trim());
 
-      const current = records.slice();
-      render(current);
+  const idxName = hdr.findIndex(h => /^name$/i.test(h));
+  const idxSurname = hdr.findIndex(h => /^surname$/i.test(h));
+  const idxMembers = hdr.findIndex(h => /^(paid\s*)?members?$/i.test(h));
 
-      if (searchEl) {
-        searchEl.addEventListener('input', e => {
-          render(applyFilter(records, e.target.value));
-        });
-      }
-    })
+  if (idxMembers === -1) {
+    tbody.innerHTML = `<tr><td colspan="4">Could not find a “Members” or “Paid Members” column in the header row.</td></tr>`;
+    if (updatedEl) updatedEl.textContent = 'Header not found';
+    return;
+  }
+
+  const records = body
+    .map(r => ({
+      name: r[idxName] || '',
+      surname: r[idxSurname] || '',
+      members: Number((r[idxMembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
+    }))
+    .filter(r => r.name || r.surname)
+    .sort((a, b) => b.members - a.members);
+
+  render(records);
+
+  if (searchEl) {
+    searchEl.addEventListener('input', e => {
+      render(applyFilter(records, e.target.value));
+    });
+  }
+})
     .catch(err => {
       if (tbody) {
         tbody.innerHTML = `<tr><td colspan="4">Could not load leaderboard. (${sanitize(err.message)})</td></tr>`;
