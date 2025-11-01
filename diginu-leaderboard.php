@@ -57,7 +57,7 @@ function diginu_leaderboard_shortcode($atts) {
         <th class="rank">#</th>
         <th>Name</th>
         <th>Surname</th>
-        <th>Signups</th>
+        <th>Paid Memberships</th>
       </tr>
     </thead>
     <tbody></tbody>
