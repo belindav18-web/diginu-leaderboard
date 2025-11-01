@@ -79,7 +79,7 @@
       const [hdr, ...body] = rows;
       const idxName = hdr.findIndex(h => /name/i.test(h));
       const idxSurname = hdr.findIndex(h => /surname/i.test(h));
-      const idxSignups = hdr.findIndex(h => /signup/i.test(h));
+      const idxSignups = hdr.findIndex(h => /(signup|paid\s*members?)/i.test(h));
 
       const records = body
         .map(r => ({
