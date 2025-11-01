@@ -85,7 +85,7 @@
         .map(r => ({
           name: r[idxName] || '',
           surname: r[idxSurname] || '',
-          members: Number((r[idxmembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
+          members: Number((r[idxMembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
         }))
         .filter(r => r.name || r.surname)
         .sort((a, b) => b.members - a.members);
