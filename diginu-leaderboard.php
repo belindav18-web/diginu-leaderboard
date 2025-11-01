@@ -33,6 +33,14 @@ function diginu_leaderboard_shortcode($atts) {
     .diginu-lb { width:100%; border-collapse:collapse; margin:1rem 0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
     .diginu-lb th, .diginu-lb td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
     .diginu-lb thead th { position:sticky; top:0; background:#fafafa; z-index:1; }
+    .diginu-lb <style>
+  .diginu-lb { 
+    width:100%; 
+    border-collapse:collapse; 
+    margin:1rem 0; 
+    font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color:#215c73; /* ← your brand color */
+  }
     .diginu-lb .rank { width:60px; text-align:center; font-weight:600; }
     .diginu-lb .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#f4f4f4; font-size:12px; }
     .diginu-lb tr:nth-child(1) .badge { background:#ffe58f; }
