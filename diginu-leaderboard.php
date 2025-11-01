@@ -9,13 +9,13 @@
 if (!defined('ABSPATH')) { exit; }
 
 function diginu_leaderboard_assets() {
-  // Load in the HEAD (last arg = false) for better compatibility with previews/builders
+  // Load in the HEAD (last arg = false) so Elementor preview can see it
   wp_register_script(
     'diginu-leaderboard-js',
     plugins_url('leaderboard.js', __FILE__),
-    array(),      // no deps
-    '1.0.2',
-    false         // <-- load in <head>, not footer
+    array(),
+    '1.0.3',   // <-- version bump ensures cache refresh
+    false      // <-- load script in <head>
   );
 }
 add_action('wp_enqueue_scripts', 'diginu_leaderboard_assets', 5);
