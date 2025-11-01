@@ -47,7 +47,7 @@
         <td class="rank"><span class="badge">${idx + 1}</span></td>
         <td>${sanitize(r.name)}</td>
         <td>${sanitize(r.surname)}</td>
-        <td>${sanitize(r.signups)}</td>
+        <td>${sanitize(r.members)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -79,7 +79,7 @@
       const [hdr, ...body] = rows;
       const idxName = hdr.findIndex(h => /name/i.test(h));
       const idxSurname = hdr.findIndex(h => /surname/i.test(h));
-      const idxSignups = hdr.findIndex(h => /paid\s*members?/i.test(h));
+      const idxSignups = hdr.findIndex(h => /members/i.test(h));
 
       const records = body
         .map(r => ({
