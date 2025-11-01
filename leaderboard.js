@@ -85,10 +85,10 @@
         .map(r => ({
           name: r[idxName] || '',
           surname: r[idxSurname] || '',
-          signups: Number((r[idxSignups] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
+          members: Number((r[idxmembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
         }))
         .filter(r => r.name || r.surname)
-        .sort((a, b) => b.signups - a.signups);
+        .sort((a, b) => b.members - a.members);
 
       const current = records.slice();
       render(current);
