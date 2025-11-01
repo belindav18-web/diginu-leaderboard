@@ -40,6 +40,15 @@
     }[s]));
   }
 
+  // Normalize a header cell (remove BOM, trim, unify spaces, lowercase)
+  function normHeader(s) {
+    return String(s || '')
+      .replace(/^\uFEFF/, '')     // strip UTF-8 BOM if present
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
   // Render table body
   function render(data) {
     tbody.innerHTML = '';
@@ -87,45 +96,9 @@
         return;
       }
 
-      // Split header/body and trim header cells
+      // Split header/body and normalize header cells
       let [hdr, ...body] = rows;
-      hdr = hdr.map(h => (h || '').toString().trim());
+      const hdrNorm = hdr.map(normHeader);
 
-      // Indices: expect Name, Surname, Members (be tolerant of Paid Members / Member)
-      const idxName = hdr.findIndex(h => /^name$/i.test(h));
-      const idxSurname = hdr.findIndex(h => /^surname$/i.test(h));
-      const idxMembers = hdr.findIndex(h => /^(paid\s*)?members?$/i.test(h));
-
-      // Helpful errors if columns are missing
-      if (idxName === -1 || idxSurname === -1 || idxMembers === -1) {
-        const missing = [];
-        if (idxName === -1) missing.push('Name');
-        if (idxSurname === -1) missing.push('Surname');
-        if (idxMembers === -1) missing.push('Members (or Paid Members)');
-        tbody.innerHTML = `<tr><td colspan="4">Missing header(s): ${sanitize(missing.join(', '))}. Make sure the first row is exactly "Name, Surname, Members" (or "Paid Members").</td></tr>`;
-        if (updatedEl) updatedEl.textContent = 'Header not found';
-        return;
-      }
-
-      // Map rows → objects, then sort by members desc
-      const records = body
-        .map(r => ({
-          name: r[idxName] || '',
-          surname: r[idxSurname] || '',
-          members: Number((r[idxMembers] || '0').toString().replace(/[^0-9.-]/g,'')) || 0
-        }))
-        .filter(r => r.name || r.surname)
-        .sort((a, b) => b.members - a.members);
-
-      render(records);
-
-      if (searchEl) {
-        searchEl.addEventListener('input', e => {
-          render(applyFilter(records, e.target.value));
-        });
-      }
-    })
-    .catch(err => {
-      tbody.innerHTML = `<tr><td colspan="4">Could not load leaderboard. (${sanitize(err.message)})</td></tr>`;
-    });
-})();
+      // Find indices (accept "members" or "paid members")
+      const idxName = hdrNorm.indexOf('name');
