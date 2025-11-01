@@ -94,8 +94,28 @@
 
     // Split header/body and normalize/trim header cells
     let [hdr, ...body] = rows;
-    const hdrNorm = hdr.map(h => String(h || '').replace(/^\uFEFF/, '').trim().replace(/\s+/g, ' ').toLowerCase());
+    // Normalize header cells: strip BOM, trim, collapse spaces, lowercase
+const H = hdr.map(function (h) {
+  return String(h || '').replace(/^\uFEFF/, '').trim().replace(/\s+/g, ' ').toLowerCase();
+});
 
+// Find columns (accept common aliases)
+const idxName    = H.indexOf('name');
+const idxSurname = H.indexOf('surname');
+const idxMembers = (function () {
+  var aliases = ['members', 'member', 'paid members', 'paid member', 'signups', 'signup'];
+  for (var i = 0; i < H.length; i++) {
+    if (aliases.indexOf(H[i]) !== -1) return i;
+  }
+  return -1;
+})();
+
+// Fail early with a clear message if not found
+if (idxName === -1 || idxSurname === -1 || idxMembers === -1) {
+  tbody.innerHTML = '<tr><td colspan="4">Missing header in row 1. Make sure it has Name, Surname and Members (or Paid Members / Signups).</td></tr>';
+  if (updatedEl) updatedEl.textContent = 'Header not found';
+  return;
+}
     // Find indices (accepts "members" or "paid members")
     const idxName = hdrNorm.indexOf('name');
     const idxSurname = hdrNorm.indexOf('surname');
@@ -120,23 +140,21 @@
       return;
     }
 
-    const records = body
-      .map(r => {
-        const name = r[idxName] || '';
-        const surname = r[idxSurname] || '';
-        const raw = (r[idxMembers] || '0').toString().trim();
+  const records = body.map(function (r) {
+  var raw = (r[idxMembers] || '0').toString().trim();
+  var members = Number(
+    raw.replace(/\u00A0/g, ' ') // NBSP → space
+       .replace(/[ ,]/g, '')    // remove spaces/commas
+       .replace(/[^0-9.-]/g, '')
+  ) || 0;
+  return {
+    name: r[idxName] || '',
+    surname: r[idxSurname] || '',
+    members: members
+  };
+}).filter(function (r) { return r.name || r.surname; })
+  .sort(function (a, b) { return b.members - a.members; });
 
-        // make "1 234" / "1,234" / "1 234" numeric
-        const members = Number(
-          raw.replace(/\u00A0/g, ' ') // NBSP → space
-             .replace(/[ ,]/g, '')    // drop spaces/commas
-             .replace(/[^0-9.-]/g, '') // safety
-        ) || 0;
-
-        return { name, surname, members };
-      })
-      .filter(r => r.name || r.surname)
-      .sort((a, b) => b.members - a.members);
 
     render(records);
 
