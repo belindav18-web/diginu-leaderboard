@@ -1,25 +1,30 @@
 <?php
 /**
  * Plugin Name: diginu Leaderboard
- * Description: Shortcode [diginu_leaderboard src="CSV_URL"] to render a leaderboard from a published Google Sheet CSV.
- * Version: 1.0.1
+ * Description: Shortcode [diginu_leaderboard src="CSV_URL"] renders a leaderboard from a published Google Sheet (CSV).
+ * Version: 1.0.4
  * Author: diginu
  */
 
 if (!defined('ABSPATH')) { exit; }
 
+/**
+ * Register JS (load in <head> so Elementor preview can’t skip it)
+ */
 function diginu_leaderboard_assets() {
-  // Load in the HEAD (last arg = false) so Elementor preview can see it
   wp_register_script(
     'diginu-leaderboard-js',
     plugins_url('leaderboard.js', __FILE__),
     array(),
-    '1.0.3',   // <-- version bump ensures cache refresh
-    false      // <-- load script in <head>
+    '1.0.4',
+    false // load in HEAD
   );
 }
 add_action('wp_enqueue_scripts', 'diginu_leaderboard_assets', 5);
 
+/**
+ * Shortcode
+ */
 function diginu_leaderboard_shortcode($atts) {
   $atts = shortcode_atts(array(
     'src' => '',
@@ -27,11 +32,14 @@ function diginu_leaderboard_shortcode($atts) {
     'limit' => '0',
   ), $atts, 'diginu_leaderboard');
 
-  if (empty($atts['src'])) return '<em>Please provide a CSV "src" URL.</em>';
+  if (empty($atts['src'])) {
+    return '<em>Please provide a CSV "src" URL.</em>';
+  }
 
+  // Markup + styles
   $html = '<div class="diginu-lb-wrap">
   <style>
-    .diginu-lb { width:100%; border-collapse:collapse; margin:1rem 0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#215c73; }
+    .diginu-lb { width:100%; border-collapse:collapse; margin:1rem 0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#215c73; }
     .diginu-lb th, .diginu-lb td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
     .diginu-lb thead th { position:sticky; top:0; background:#fafafa; z-index:1; }
     .diginu-lb .rank { width:60px; text-align:center; font-weight:600; }
@@ -65,7 +73,7 @@ function diginu_leaderboard_shortcode($atts) {
   </table>
 </div>';
 
-  // enqueue + config + “I’m here” debug
+  // Enqueue + pass config
   wp_enqueue_script('diginu-leaderboard-js');
   wp_add_inline_script(
     'diginu-leaderboard-js',
@@ -77,10 +85,9 @@ function diginu_leaderboard_shortcode($atts) {
     'before'
   );
 
-  // also drop a tiny inline marker so we can see the shortcode ran
+  // Small marker to verify shortcode rendered
   $html .= '<script>console.log("[diginu-leaderboard] shortcode rendered");</script>';
 
   return $html;
 }
 add_shortcode('diginu_leaderboard', 'diginu_leaderboard_shortcode');
-
