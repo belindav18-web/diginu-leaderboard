@@ -16,7 +16,7 @@ function diginu_leaderboard_assets() {
     'diginu-leaderboard-js',
     plugins_url('leaderboard.js', __FILE__),
     array(),
-    '1.0.4',
+    '1.0.1',
     false // load in HEAD
   );
 }
@@ -33,7 +33,7 @@ function diginu_leaderboard_shortcode($atts) {
   ), $atts, 'diginu_leaderboard');
 
   if (empty($atts['src'])) {
-  return '<em>Please provide a CSV "src" URL in the shortcode.</em>';
+  return 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgL9D3f8unpiKtGBbmQvtqCLg-ZoxSl5epX76sMRaWPng46PcShZHRVx7zxVoeSI2JGiY_-EyPQK12/pub?gid=0&single=true&output=csv';
 }
 
 
