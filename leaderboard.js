@@ -6,10 +6,12 @@
   const searchEl = document.getElementById('diginu-lb-search');
   if (!tbody) return;
 
-  // Add a cache-buster so updates show when you edit the sheet
+  console.log('[diginu-leaderboard] script loaded');
+
+  // Cache-buster so updates reflect quickly
   const csvUrl = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + (cfg.cacheBust || Date.now());
 
-  // Simple CSV parser with quoted-field support
+  // CSV parser (handles quotes)
   function parseCSV(text) {
     const rows = [];
     let i = 0, field = '', row = [], inQuotes = false;
@@ -35,135 +37,125 @@
 
   // Escape HTML
   function sanitize(str) {
-    return String(str || '').replace(/[&<>"']/g, s => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[s]));
+    return String(str || '').replace(/[&<>"']/g, function(s) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s];
+    });
   }
 
-  // Normalize a header cell (remove BOM, trim, unify spaces, lowercase)
+  // Normalize a header cell (strip BOM, trim, collapse spaces, lowercase)
   function normHeader(s) {
     return String(s || '')
-      .replace(/^\uFEFF/, '')     // strip UTF-8 BOM if present
+      .replace(/^\uFEFF/, '')
       .trim()
       .replace(/\s+/g, ' ')
       .toLowerCase();
   }
 
-  // Render table body
+  // Render table rows
   function render(data) {
     tbody.innerHTML = '';
     const limit = Number(cfg.limit) || 0;
     const list = limit > 0 ? data.slice(0, limit) : data;
 
-    list.forEach((r, idx) => {
+    list.forEach(function(r, idx) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="rank"><span class="badge">${idx + 1}</span></td>
-        <td>${sanitize(r.name)}</td>
-        <td>${sanitize(r.surname)}</td>
-        <td>${sanitize(r.members)}</td>
-      `;
+      tr.innerHTML = ''
+        + '<td class="rank"><span class="badge">' + (idx + 1) + '</span></td>'
+        + '<td>' + sanitize(r.name) + '</td>'
+        + '<td>' + sanitize(r.surname) + '</td>'
+        + '<td>' + sanitize(r.members) + '</td>';
       tbody.appendChild(tr);
     });
   }
 
-  // Client-side search by name/surname
+  // Client-side search
   function applyFilter(data, q) {
     if (!q) return data;
     const s = q.toLowerCase().trim();
-    return data.filter(r =>
-      (r.name || '').toLowerCase().includes(s) ||
-      (r.surname || '').toLowerCase().includes(s)
-    );
+    return data.filter(function(r){
+      return (r.name || '').toLowerCase().indexOf(s) !== -1
+          || (r.surname || '').toLowerCase().indexOf(s) !== -1;
+    });
   }
 
   fetch(csvUrl, { cache: 'no-store' })
-  .then(r => {
-    const lm = r.headers.get('Last-Modified');
-    if (lm && updatedEl) {
-      try { updatedEl.textContent = `Last updated: ${new Date(lm).toLocaleString()}`; } catch(_) {}
-    }
-    return r.text();
-  })
-  .then(txt => {
-    const rows = parseCSV(txt);
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="4">No data found in CSV.</td></tr>`;
-      return;
-    }
+    .then(function(r) {
+      const lm = r.headers.get('Last-Modified');
+      if (lm && updatedEl) {
+        try {
+          updatedEl.textContent = 'Last updated: ' + new Date(lm).toLocaleString();
+        } catch (e) {}
+      }
+      return r.text();
+    })
+    .then(function(txt) {
+      const rows = parseCSV(txt);
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No data found in CSV.</td></tr>';
+        return;
+      }
 
-    // Split header/body and normalize/trim header cells
-    let [hdr, ...body] = rows;
-    // Normalize header cells: strip BOM, trim, collapse spaces, lowercase
-const H = hdr.map(function (h) {
-  return String(h || '').replace(/^\uFEFF/, '').trim().replace(/\s+/g, ' ').toLowerCase();
-});
+      // Split header/body and normalize headers
+      var hdr = rows[0] || [];
+      var body = rows.slice(1);
+      var H = hdr.map(normHeader);
 
-// Find columns (accept common aliases)
-const idxName    = H.indexOf('name');
-const idxSurname = H.indexOf('surname');
-const idxMembers = (function () {
-  var aliases = ['members', 'member', 'paid members', 'paid member', 'signups', 'signup'];
-  for (var i = 0; i < H.length; i++) {
-    if (aliases.indexOf(H[i]) !== -1) return i;
-  }
-  return -1;
-})();
+      // Find columns: accept Members, Paid Members, Signups as fallback
+      var idxName    = H.indexOf('name');
+      var idxSurname = H.indexOf('surname');
 
-// Fail early with a clear message if not found
-if (idxName === -1 || idxSurname === -1 || idxMembers === -1) {
-  tbody.innerHTML = '<tr><td colspan="4">Missing header in row 1. Make sure it has Name, Surname and Members (or Paid Members / Signups).</td></tr>';
-  if (updatedEl) updatedEl.textContent = 'Header not found';
-  return;
-}
-    // Find indices (accepts "members" or "paid members")
-    const idxName = hdrNorm.indexOf('name');
-    const idxSurname = hdrNorm.indexOf('surname');
-    const idxMembers = hdrNorm.indexOf('members') !== -1
-      ? hdrNorm.indexOf('members')
-      : hdrNorm.indexOf('paid members');
+      var idxMembers = (function () {
+        var aliases = ['members', 'paid members', 'member', 'paid member', 'signups', 'signup'];
+        for (var i = 0; i < H.length; i++) {
+          if (aliases.indexOf(H[i]) !== -1) return i;
+        }
+        return -1;
+      })();
 
-    // (Optional) debug – helps confirm what the sheet sends
-    try {
-      console.log('[diginu-leaderboard] header raw:', hdr);
-      console.log('[diginu-leaderboard] header norm:', hdrNorm);
-      console.log('[diginu-leaderboard] idxName=%s idxSurname=%s idxMembers=%s', idxName, idxSurname, idxMembers);
-    } catch(_) {}
+      // Debug — helps verify what the sheet sends
+      try {
+        console.log('[diginu-leaderboard] header raw:', hdr);
+        console.log('[diginu-leaderboard] header norm:', H);
+        console.log('[diginu-leaderboard] idxName=%s idxSurname=%s idxMembers=%s', idxName, idxSurname, idxMembers);
+      } catch (e) {}
 
-    if (idxName === -1 || idxSurname === -1 || idxMembers === -1) {
-      const missing = [];
-      if (idxName === -1) missing.push('Name');
-      if (idxSurname === -1) missing.push('Surname');
-      if (idxMembers === -1) missing.push('Members (or Paid Members)');
-      tbody.innerHTML = `<tr><td colspan="4">Missing header(s): ${missing.join(', ')}. Make sure row 1 is exactly "Name, Surname, Members".</td></tr>`;
-      if (updatedEl) updatedEl.textContent = 'Header not found';
-      return;
-    }
+      if (idxName === -1 || idxSurname === -1 || idxMembers === -1) {
+        var missing = [];
+        if (idxName === -1) missing.push('Name');
+        if (idxSurname === -1) missing.push('Surname');
+        if (idxMembers === -1) missing.push('Members (or Paid Members / Signups)');
+        tbody.innerHTML = '<tr><td colspan="4">Missing header(s): ' + sanitize(missing.join(', ')) + '. Ensure row 1 is exactly "Name, Surname, Members".</td></tr>';
+        if (updatedEl) updatedEl.textContent = 'Header not found';
+        return;
+      }
 
-  const records = body.map(function (r) {
-  var raw = (r[idxMembers] || '0').toString().trim();
-  var members = Number(
-    raw.replace(/\u00A0/g, ' ') // NBSP → space
-       .replace(/[ ,]/g, '')    // remove spaces/commas
-       .replace(/[^0-9.-]/g, '')
-  ) || 0;
-  return {
-    name: r[idxName] || '',
-    surname: r[idxSurname] || '',
-    members: members
-  };
-}).filter(function (r) { return r.name || r.surname; })
-  .sort(function (a, b) { return b.members - a.members; });
+      // Map rows → objects, robust numeric parse
+      var records = body.map(function(r) {
+        var name = r[idxName] || '';
+        var surname = r[idxSurname] || '';
+        var raw = (r[idxMembers] || '0').toString().trim();
+        var members = Number(
+          raw.replace(/\u00A0/g, ' ') // NBSP → space
+             .replace(/[ ,]/g, '')    // remove spaces/commas
+             .replace(/[^0-9.-]/g, '') // safety
+        ) || 0;
 
-
-    render(records);
-
-    if (searchEl) {
-      searchEl.addEventListener('input', e => {
-        render(applyFilter(records, e.target.value));
+        return { name: name, surname: surname, members: members };
+      }).filter(function (r) {
+        return r.name || r.surname;
+      }).sort(function (a, b) {
+        return b.members - a.members;
       });
-    }
-  })
-  .catch(err => {
-    tbody.innerHTML = `<tr><td colspan="4">Could not load leaderboard. (${sanitize(err.message)})</td></tr>`;
-  });
+
+      render(records);
+
+      if (searchEl) {
+        searchEl.addEventListener('input', function(e) {
+          render(applyFilter(records, e.target.value));
+        });
+      }
+    })
+    .catch(function(err) {
+      tbody.innerHTML = '<tr><td colspan="4">Could not load leaderboard. (' + sanitize(err.message) + ')</td></tr>';
+    });
+})();
