@@ -2,7 +2,7 @@
 /**
  * Plugin Name: diginu Leaderboard
  * Description: Shortcode [diginu_leaderboard src="CSV_URL"] renders a leaderboard from a published Google Sheet (CSV).
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: diginu
  */
 
@@ -16,8 +16,8 @@ function diginu_leaderboard_assets() {
     'diginu-leaderboard-js',
     plugins_url('leaderboard.js', __FILE__),
     array(),
-    '1.0.1',
-    false // load in HEAD
+    '1.0.5', // bump this to force fresh JS
+    false    // load in HEAD
   );
 }
 add_action('wp_enqueue_scripts', 'diginu_leaderboard_assets', 5);
@@ -27,15 +27,12 @@ add_action('wp_enqueue_scripts', 'diginu_leaderboard_assets', 5);
  */
 function diginu_leaderboard_shortcode($atts) {
   $atts = shortcode_atts(array(
-    'src' => 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgL9D3f8unpiKtGBbmQvtqCLg-ZoxSl5epX76sMRaWPng46PcShZHRVx7zxVoeSI2JGiY_-EyPQK12/pub?gid=0&single=true&output=csv',
+    'src'   => 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgL9D3f8unpiKtGBbmQvtqCLg-ZoxSl5epX76sMRaWPng46PcShZHRVx7zxVoeSI2JGiY_-EyPQK12/pub?gid=0&single=true&output=csv',
     'title' => 'Leaderboard',
     'limit' => '0',
   ), $atts, 'diginu_leaderboard');
 
-  if (empty($atts['src'])) {
-  return 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgL9D3f8unpiKtGBbmQvtqCLg-ZoxSl5epX76sMRaWPng46PcShZHRVx7zxVoeSI2JGiY_-EyPQK12/pub?gid=0&single=true&output=csv';
-}
-
+  // (Removed the empty-src return block since we have a default)
 
   // Markup + styles
   $html = '<div class="diginu-lb-wrap">
